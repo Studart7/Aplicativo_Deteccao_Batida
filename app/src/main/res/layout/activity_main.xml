@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <!-- Texto que mostrará o estado do acelerômetro -->
+    <TextView
+        android:id="@+id/tvAccelerometer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Acelerômetro"
+        android:textSize="18sp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"/>
+
+    <!-- Texto que mostrará o estado do giroscópio -->
+    <TextView
+        android:id="@+id/tvGyroscope"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Giroscópio"
+        android:layout_below="@id/tvAccelerometer"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:textSize="18sp"/>
+
+    <!-- Texto que mostrará alertas de impacto/batida -->
+    <TextView
+        android:id="@+id/tvCrashAlert"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Detectando..."
+        android:textColor="@android:color/holo_red_dark"
+        android:textSize="20sp"
+        android:layout_below="@id/tvGyroscope"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="30dp"
+        android:textStyle="bold"/>
+
+</RelativeLayout>
