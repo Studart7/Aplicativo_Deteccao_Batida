@@ -1,13 +1,18 @@
 package com.example.deteccaobatida
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import android.widget.TextView
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
@@ -17,15 +22,14 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private lateinit var tvAccelerometer: TextView
     private lateinit var tvGyroscope: TextView
-    private lateinit var tvCrashAlert: TextView
 
-    private val accelerometerValues = mutableListOf<FloatArray>()
-    private val gyroscopeValues = mutableListOf<FloatArray>()
+    private val threshold = 70.0f // Defina o limiar que você achar adequado
 
-    private val threshold = 0.1f // Define o limiar de exibição normal
-    private val impactThreshold = 80.0f // Aumente o limiar para detectar uma batida
-
-    private var alertDialog: AlertDialog? = null // Armazena o diálogo
+    private val crashReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            showCrashDialog()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,7 +37,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         tvAccelerometer = findViewById(R.id.tvAccelerometer)
         tvGyroscope = findViewById(R.id.tvGyroscope)
-        tvCrashAlert = findViewById(R.id.tvCrashAlert)
 
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
@@ -59,76 +62,50 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         event?.let {
             when (it.sensor.type) {
                 Sensor.TYPE_ACCELEROMETER -> {
-                    val smoothedValues = applyMovingAverage(it.values)
-                    val x = smoothedValues[0]
-                    val y = smoothedValues[1]
-                    val z = smoothedValues[2]
-
-                    // Calcula a magnitude total da aceleração
-                    val totalAcceleration = Math.sqrt((x * x + y * y + z * z).toDouble()).toFloat()
-
+                    val x = it.values[0]
+                    val y = it.values[1]
+                    val z = it.values[2]
                     if (Math.abs(x) > threshold || Math.abs(y) > threshold || Math.abs(z) > threshold) {
-                        tvAccelerometer.text = "Acelerômetro: \nX: $x m/s² \nY: $y m/s² \nZ: $z m/s²"
+                        // Envia um broadcast quando uma batida é detectada
+                        val intent = Intent("com.example.deteccaobatida.CAR_CRASH")
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
                     }
-
-                    // Verifica se o total de aceleração excede o limiar de batida
-                    if (totalAcceleration > impactThreshold) {
-                        showCrashDetectedDialog()
-                    } else {
-                        // Reseta a mensagem de alerta quando a aceleração está abaixo do limiar
-                        tvCrashAlert.text = "Detectando..."
-                    }
+                    tvAccelerometer.text = "Acelerômetro: \nX: $x m/s² \nY: $y m/s² \nZ: $z m/s²"
                 }
                 Sensor.TYPE_GYROSCOPE -> {
-                    val smoothedValues = applyMovingAverage(it.values)
-                    val x = smoothedValues[0]
-                    val y = smoothedValues[1]
-                    val z = smoothedValues[2]
-                    if (Math.abs(x) > threshold || Math.abs(y) > threshold || Math.abs(z) > threshold) {
-                        tvGyroscope.text = "Giroscópio: \nX: $x rad/s \nY: $y rad/s \nZ: $z rad/s"
-                    }
+                    val x = it.values[0]
+                    val y = it.values[1]
+                    val z = it.values[2]
+                    tvGyroscope.text = "Giroscópio: \nX: $x rad/s \nY: $y rad/s \nZ: $z rad/s"
                 }
             }
         }
     }
 
-    private fun showCrashDetectedDialog() {
-        // Atualiza o TextView para mostrar que uma batida foi detectada
-        tvCrashAlert.text = "Batida detectada!"
-
-        // Verifica se o diálogo já está sendo exibido
-        if (alertDialog == null || !alertDialog!!.isShowing) {
-            alertDialog = AlertDialog.Builder(this)
-                .setTitle("Batida Detectada!")
-                .setMessage("Uma batida foi detectada. Verifique o veículo.")
-                .setPositiveButton("OK") { dialog, _ ->
-                    dialog.dismiss() // Fecha o diálogo
-                    alertDialog = null // Reseta o diálogo
-                }
-                .setOnDismissListener {
-                    alertDialog = null // Reseta o diálogo quando fechado
-                }
-                .create()
-
-            alertDialog?.show()
-        }
-    }
-
-    private fun applyMovingAverage(values: FloatArray): FloatArray {
-        val size = 5
-        if (accelerometerValues.size >= size) {
-            accelerometerValues.removeAt(0)
-        }
-        accelerometerValues.add(values.copyOf())
-        val avg = FloatArray(values.size)
-        for (i in values.indices) {
-            avg[i] = accelerometerValues.map { it[i] }.average().toFloat()
-        }
-        return avg
+    private fun showCrashDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Atenção!")
+        builder.setMessage("Uma batida foi detectada!")
+        builder.setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+        val dialog = builder.create()
+        dialog.show()
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         // Não é necessário lidar com isso para este exemplo
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val serviceIntent = Intent(this, SensorService::class.java)
+        startService(serviceIntent) // Inicia o serviço em primeiro plano
+        LocalBroadcastManager.getInstance(this).registerReceiver(crashReceiver, IntentFilter("com.example.deteccaobatida.CAR_CRASH"))
+    }
+
+
+    override fun onStop() {
+        super.onStop()
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(crashReceiver)
     }
 
     override fun onResume() {
