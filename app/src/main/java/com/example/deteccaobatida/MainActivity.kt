@@ -8,6 +8,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import com.example.deteccaobatida.services.SensorService
 import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -22,8 +23,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private lateinit var tvAccelerometer: TextView
     private lateinit var tvGyroscope: TextView
+    private lateinit var confusionMatrixView: ConfusionMatrixView // Change to ConfusionMatrixView
 
-    private val threshold = 70.0f // Defina o limiar que você achar adequado
+    private val threshold = 70.0f // Define the threshold as needed
+    private val numClasses = 3
+    private val confusionMatrix = ConfusionMatrix(numClasses)
 
     private val crashReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -37,6 +41,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         tvAccelerometer = findViewById(R.id.tvAccelerometer)
         tvGyroscope = findViewById(R.id.tvGyroscope)
+        confusionMatrixView = findViewById(R.id.confusionMatrixView) // Ensure this is ConfusionMatrixView
 
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
@@ -56,6 +61,13 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
             }
         }
+
+        // Start the SensorService
+        val serviceIntent = Intent(this, SensorService::class.java)
+        startService(serviceIntent)
+
+        // Register the crash receiver
+        registerReceiver(crashReceiver, IntentFilter("com.example.deteccaobatida.CRASH_DETECTED"))
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
@@ -71,15 +83,22 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
                     }
                     tvAccelerometer.text = "Acelerômetro: \nX: $x m/s² \nY: $y m/s² \nZ: $z m/s²"
+                    updateConfusionMatrix(0, 1) // Example: Update confusion matrix with accelerometer data
                 }
                 Sensor.TYPE_GYROSCOPE -> {
                     val x = it.values[0]
                     val y = it.values[1]
                     val z = it.values[2]
                     tvGyroscope.text = "Giroscópio: \nX: $x rad/s \nY: $y rad/s \nZ: $z rad/s"
+                    updateConfusionMatrix(1, 2) // Example: Update confusion matrix with gyroscope data
                 }
             }
         }
+    }
+
+    private fun updateConfusionMatrix(trueLabel: Int, predictedLabel: Int) {
+        confusionMatrix.addPrediction(trueLabel, predictedLabel)
+        confusionMatrixView.setMatrix(confusionMatrix.getMatrix()) // This should now work
     }
 
     private fun showCrashDialog() {
@@ -101,7 +120,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         startService(serviceIntent) // Inicia o serviço em primeiro plano
         LocalBroadcastManager.getInstance(this).registerReceiver(crashReceiver, IntentFilter("com.example.deteccaobatida.CAR_CRASH"))
     }
-
 
     override fun onStop() {
         super.onStop()

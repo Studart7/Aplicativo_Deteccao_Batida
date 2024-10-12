@@ -12,7 +12,7 @@
         android:text="Acelerômetro"
         android:textSize="18sp"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"/>
+        android:layout_marginTop="20dp" />
 
     <!-- Texto que mostrará o estado do giroscópio -->
     <TextView
@@ -23,7 +23,7 @@
         android:layout_below="@id/tvAccelerometer"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="20dp"
-        android:textSize="18sp"/>
+        android:textSize="18sp" />
 
     <!-- Texto que mostrará alertas de impacto/batida -->
     <TextView
@@ -36,6 +36,10 @@
         android:layout_below="@id/tvGyroscope"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="30dp"
-        android:textStyle="bold"/>
+        android:textStyle="bold" />
 
+        <com.example.deteccaobatida.ConfusionMatrixView
+        android:id="@+id/confusionMatrixView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 </RelativeLayout>
