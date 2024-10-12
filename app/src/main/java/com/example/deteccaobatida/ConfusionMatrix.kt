@@ -62,6 +62,13 @@ class ConfusionMatrix(private val numClasses: Int) {
         }
     }
 
+    // calcula a acurácia total da matriz de confusão
+    fun getAccuracy(): Float {
+        val truePositives = (0 until numClasses).sumBy { matrix[it][it] }
+        val totalSamples = matrix.sumBy { it.sum() }
+        return if (totalSamples == 0) 0f else truePositives.toFloat() / totalSamples
+    }
+
     override fun toString(): String {
         val builder = StringBuilder()
         for (i in matrix.indices) {

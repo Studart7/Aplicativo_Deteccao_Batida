@@ -13,6 +13,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import android.widget.GridLayout
 import android.widget.TextView
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
@@ -23,10 +24,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private lateinit var tvAccelerometer: TextView
     private lateinit var tvGyroscope: TextView
-    private lateinit var confusionMatrixView: ConfusionMatrixView // Change to ConfusionMatrixView
+    private lateinit var confusionMatrixView: ConfusionMatrixView
+    private lateinit var tvMetrics: TextView
+    private lateinit var gridConfusionMatrix: GridLayout
 
     private val threshold = 70.0f // Define the threshold as needed
-    private val numClasses = 3
+    private val numClasses = 2
     private val confusionMatrix = ConfusionMatrix(numClasses)
 
     private val crashReceiver = object : BroadcastReceiver() {
@@ -41,7 +44,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         tvAccelerometer = findViewById(R.id.tvAccelerometer)
         tvGyroscope = findViewById(R.id.tvGyroscope)
-        confusionMatrixView = findViewById(R.id.confusionMatrixView) // Ensure this is ConfusionMatrixView
+        confusionMatrixView = findViewById(R.id.confusionMatrixView)
+        tvMetrics = findViewById(R.id.tvMetrics)
+        gridConfusionMatrix = findViewById(R.id.gridConfusionMatrix)
 
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
@@ -98,7 +103,38 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private fun updateConfusionMatrix(trueLabel: Int, predictedLabel: Int) {
         confusionMatrix.addPrediction(trueLabel, predictedLabel)
-        confusionMatrixView.setMatrix(confusionMatrix.getMatrix()) // This should now work
+        updateGridConfusionMatrix(confusionMatrix.getMatrix()) // Update the GridLayout
+        displayMetrics() // Display the updated metrics
+    }
+
+    private fun updateGridConfusionMatrix(matrix: Array<IntArray>) {
+        val cellIds = arrayOf(
+            intArrayOf(R.id.cell00, R.id.cell01),
+            intArrayOf(R.id.cell10, R.id.cell11)
+        )
+
+        for (i in matrix.indices) {
+            for (j in matrix[i].indices) {
+                val cell = findViewById<TextView>(cellIds[i][j])
+                cell.text = matrix[i][j].toString()
+            }
+        }
+    }
+
+    private fun displayMetrics() {
+        val metrics = StringBuilder()
+        for (i in 0 until numClasses) {
+            val recall = confusionMatrix.getRecall(i)
+            val precision = confusionMatrix.getPrecision(i)
+            val f1Score = confusionMatrix.getF1Score(i)
+            metrics.append("Class $i:\n")
+            metrics.append("Recall: $recall\n")
+            metrics.append("Precision: $precision\n")
+            metrics.append("F1 Score: $f1Score\n\n")
+        }
+        val accuracy = confusionMatrix.getAccuracy()
+        metrics.append("Accuracy: $accuracy\n")
+        tvMetrics.text = metrics.toString()
     }
 
     private fun showCrashDialog() {
