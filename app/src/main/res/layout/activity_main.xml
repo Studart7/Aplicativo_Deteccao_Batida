@@ -4,93 +4,144 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
-    <!-- Texto que mostrará o estado do acelerômetro -->
-    <TextView
-        android:id="@+id/tvAccelerometer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Acelerômetro"
-        android:textSize="18sp"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp" />
+    <ScrollView
+        android:layout_width="395dp"
+        android:layout_height="698dp">
 
-    <!-- Texto que mostrará o estado do giroscópio -->
-    <TextView
-        android:id="@+id/tvGyroscope"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Giroscópio"
-        android:layout_below="@id/tvAccelerometer"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
-        android:textSize="18sp" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-    <!-- Texto que mostrará alertas de impacto/batida -->
-    <TextView
-        android:id="@+id/tvCrashAlert"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Detectando..."
-        android:textColor="@android:color/holo_red_dark"
-        android:textSize="20sp"
-        android:layout_below="@id/tvGyroscope"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="30dp"
-        android:textStyle="bold" />
+            <!-- Texto que mostrará alertas de impacto/batida -->
+            <TextView
+                android:id="@+id/tvCrashAlert"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="30dp"
+                android:text="Detectando..."
+                android:textColor="@android:color/holo_red_dark"
+                android:textSize="20sp"
+                android:textStyle="bold" />
 
-    <GridLayout
-        android:id="@+id/gridConfusionMatrix"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/tvGyroscope"
-        android:layout_marginTop="16dp"
-        android:columnCount="2"
-        android:rowCount="2"
-        android:padding="16dp"
-        android:background="#E0E0E0">
+            <!-- Texto que mostrará o estado do acelerômetro -->
+            <TextView
+                android:id="@+id/tvAccelerometer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tvCrashAlert"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="20dp"
+                android:text="Acelerômetro"
+                android:textSize="18sp" />
 
-        <!-- Placeholder TextViews for the matrix cells -->
-        <TextView
-            android:id="@+id/cell00"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:text="0"
-            android:gravity="center"
-            android:background="#FFFFFF" />
+            <!-- Texto que mostrará o estado do giroscópio -->
+            <TextView
+                android:id="@+id/tvGyroscope"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tvAccelerometer"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="20dp"
+                android:text="Giroscópio"
+                android:textSize="18sp" />
 
-        <TextView
-            android:id="@+id/cell01"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:text="0"
-            android:gravity="center"
-            android:background="#FFFFFF" />
+            <TextView
+                android:id="@+id/tvMatrixConfusionTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tvGyroscope"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="30dp"
+                android:text="Matriz de confusão"
+                android:textColor="#FFFFFF"
+                android:textSize="32sp"
+                android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/cell10"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:text="0"
-            android:gravity="center"
-            android:background="#FFFFFF" />
+            <GridLayout
+                android:id="@+id/gridConfusionMatrix"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tvGyroscope"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="90dp"
+                android:columnCount="2"
+                android:rowCount="2">
 
-        <TextView
-            android:id="@+id/cell11"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:text="0"
-            android:gravity="center"
-            android:background="#FFFFFF" />
-    </GridLayout>
+                <!-- Placeholder TextViews for the matrix cells -->
+                <TextView
+                    android:id="@+id/cell00"
+                    android:layout_width="171dp"
+                    android:layout_height="152dp"
+                    android:background="#5CED73"
+                    android:gravity="center"
+                    android:padding="8dp"
+                    android:textColor="#000000"
+                    android:textSize="24sp" />
 
-    <com.example.deteccaobatida.ConfusionMatrixView
-        android:id="@+id/confusionMatrixView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/tvCrashAlert"
-        android:layout_marginTop="16dp" />
+                <TextView
+                    android:id="@+id/cell01"
+                    android:layout_width="171dp"
+                    android:layout_height="152dp"
+                    android:background="#FF515F"
+                    android:gravity="center"
+                    android:padding="8dp"
+                    android:textColor="#000000"
+                    android:textSize="24sp" />
+
+                <TextView
+                    android:id="@+id/cell10"
+                    android:layout_width="171dp"
+                    android:layout_height="152dp"
+                    android:background="#FF515F"
+                    android:gravity="center"
+                    android:padding="8dp"
+                    android:textColor="#000000"
+                    android:textSize="24sp" />
+
+                <TextView
+                    android:id="@+id/cell11"
+                    android:layout_width="171dp"
+                    android:layout_height="152dp"
+                    android:background="#5CED73"
+                    android:gravity="center"
+                    android:padding="8dp"
+                    android:textColor="#000000"
+                    android:textSize="24sp" />
+            </GridLayout>
+
+            <!-- Title for the metrics -->
+            <com.example.deteccaobatida.ConfusionMatrixView
+                android:id="@+id/confusionMatrixView"
+                android:layout_width="332dp"
+                android:layout_height="29dp"
+                android:layout_below="@id/gridConfusionMatrix"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="-23dp" />
+
+            <!-- TextView for displaying metrics -->
+            <TextView
+                android:id="@+id/tvMetricsTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/confusionMatrixView"
+                android:layout_marginTop="10dp"
+                android:text="Métricas"
+                android:textColor="#FFFFFF"
+                android:textSize="32sp"
+                android:layout_centerHorizontal="true"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvMetrics"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tvMetricsTitle"
+                android:layout_marginTop="10dp"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:layout_centerHorizontal="true"
+                android:text="Metrics will be displayed here" />
+        </RelativeLayout>
+    </ScrollView>
 </RelativeLayout>

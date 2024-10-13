@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var gridConfusionMatrix: GridLayout
 
     private val threshold = 70.0f // Define the threshold as needed
-    private val numClasses = 2
+    private val numClasses = 2 // Ensure this matches the number of classes
     private val confusionMatrix = ConfusionMatrix(numClasses)
 
     private val crashReceiver = object : BroadcastReceiver() {
@@ -95,16 +95,39 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     val y = it.values[1]
                     val z = it.values[2]
                     tvGyroscope.text = "Giroscópio: \nX: $x rad/s \nY: $y rad/s \nZ: $z rad/s"
-                    updateConfusionMatrix(1, 2) // Example: Update confusion matrix with gyroscope data
+                    updateConfusionMatrix(1, 0) // Example: Update confusion matrix with gyroscope data
                 }
             }
         }
     }
 
     private fun updateConfusionMatrix(trueLabel: Int, predictedLabel: Int) {
-        confusionMatrix.addPrediction(trueLabel, predictedLabel)
-        updateGridConfusionMatrix(confusionMatrix.getMatrix()) // Update the GridLayout
-        displayMetrics() // Display the updated metrics
+        if (trueLabel in 0 until numClasses && predictedLabel in 0 until numClasses) {
+            confusionMatrix.addPrediction(trueLabel, predictedLabel)
+            updateGridConfusionMatrix(confusionMatrix.getMatrix()) // Update the GridLayout
+            displayMetrics() // Mostra os dados atualizados
+        } else {
+            // Lida com índices inválidos
+            println("Invalid indices: trueLabel=$trueLabel, predictedLabel=$predictedLabel")
+        }
+    }
+
+    private fun updateColorGridConfusionMatrix(matrix: Array<IntArray>) {
+        val cellIds = arrayOf(
+            intArrayOf(R.id.cell00, R.id.cell01),
+            intArrayOf(R.id.cell10, R.id.cell11),
+        )
+
+        for (i in matrix.indices) {
+            for (j in matrix[i].indices) {
+                val cell = findViewById<TextView>(cellIds[i][j])
+                cell.text = matrix[i][j].toString()
+                when {
+                    i == j -> cell.setBackgroundColor(resources.getColor(android.R.color.holo_green_light)) // True Positive
+                    i != j -> cell.setBackgroundColor(resources.getColor(android.R.color.holo_red_light)) // False Positive/Negative
+                }
+            }
+        }
     }
 
     private fun updateGridConfusionMatrix(matrix: Array<IntArray>) {
