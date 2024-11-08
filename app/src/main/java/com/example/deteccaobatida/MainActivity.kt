@@ -21,6 +21,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
     private var gyroscope: Sensor? = null
+    private var previousTruePositiveCount = 0
+    private var isPopupActive = false // Controle para verificar se um popup já está ativo
 
     private lateinit var tvAccelerometer: TextView
     private lateinit var tvGyroscope: TextView
@@ -28,8 +30,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var tvMetrics: TextView
     private lateinit var gridConfusionMatrix: GridLayout
 
-    private val threshold = 70.0f // Define the threshold as needed
-    private val numClasses = 2 // Ensure this matches the number of classes
+    private val LIMITE_DESACELERACAO = 90.0f // Defina o valor conforme necessário
+    private val LIMITE_GIRO = 70.0f // Defina o valor conforme necessário
+    private val numClasses = 2 // Número de classes
     private val confusionMatrix = ConfusionMatrix(numClasses)
 
     private val crashReceiver = object : BroadcastReceiver() {
@@ -67,66 +70,79 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             }
         }
 
-        // Start the SensorService
+        // Inicia o SensorService
         val serviceIntent = Intent(this, SensorService::class.java)
         startService(serviceIntent)
-
-        // Register the crash receiver
-        registerReceiver(crashReceiver, IntentFilter("com.example.deteccaobatida.CRASH_DETECTED"))
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
+        var acelerometroDetectou = false
+        var giroscopioDetectou = false
+
         event?.let {
             when (it.sensor.type) {
                 Sensor.TYPE_ACCELEROMETER -> {
                     val x = it.values[0]
                     val y = it.values[1]
                     val z = it.values[2]
-                    if (Math.abs(x) > threshold || Math.abs(y) > threshold || Math.abs(z) > threshold) {
-                        // Envia um broadcast quando uma batida é detectada
-                        val intent = Intent("com.example.deteccaobatida.CAR_CRASH")
-                        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+                    val magnitude = Math.sqrt((x * x + y * y + z * z).toDouble()).toFloat()
+
+                    // Verifica se a magnitude do acelerômetro excede o limite
+                    if (magnitude > LIMITE_DESACELERACAO) {
+                        acelerometroDetectou = true
                     }
+
                     tvAccelerometer.text = "Acelerômetro: \nX: $x m/s² \nY: $y m/s² \nZ: $z m/s²"
-                    updateConfusionMatrix(0, 1) // Example: Update confusion matrix with accelerometer data
                 }
                 Sensor.TYPE_GYROSCOPE -> {
                     val x = it.values[0]
                     val y = it.values[1]
                     val z = it.values[2]
+                    val magnitude = Math.sqrt((x * x + y * y + z * z).toDouble()).toFloat()
+
+                    // Verifica se a magnitude do giroscópio excede o limite
+                    if (magnitude > LIMITE_GIRO) {
+                        giroscopioDetectou = true
+                    }
+
                     tvGyroscope.text = "Giroscópio: \nX: $x rad/s \nY: $y rad/s \nZ: $z rad/s"
-                    updateConfusionMatrix(1, 0) // Example: Update confusion matrix with gyroscope data
                 }
+            }
+
+            // Atualiza a matriz de confusão com base nos resultados dos sensores
+            if (acelerometroDetectou && giroscopioDetectou) {
+                // True Positive (houve uma batida e foi detectada)
+                updateConfusionMatrix(1, 0)
+            } else if (acelerometroDetectou || giroscopioDetectou) {
+                // False Positive (detecção de batida falsa)
+                updateConfusionMatrix(0, 0)
+            } else {
+                // True Negative (não houve batida e não foi detectada)
+                updateConfusionMatrix(1, 1)
             }
         }
     }
 
     private fun updateConfusionMatrix(trueLabel: Int, predictedLabel: Int) {
         if (trueLabel in 0 until numClasses && predictedLabel in 0 until numClasses) {
+            val matrixBeforeUpdate = confusionMatrix.getMatrix().map { it.clone() } // Clona o estado atual da matriz
             confusionMatrix.addPrediction(trueLabel, predictedLabel)
-            updateGridConfusionMatrix(confusionMatrix.getMatrix()) // Update the GridLayout
-            displayMetrics() // Mostra os dados atualizados
-        } else {
-            // Lida com índices inválidos
-            println("Invalid indices: trueLabel=$trueLabel, predictedLabel=$predictedLabel")
-        }
-    }
-
-    private fun updateColorGridConfusionMatrix(matrix: Array<IntArray>) {
-        val cellIds = arrayOf(
-            intArrayOf(R.id.cell00, R.id.cell01),
-            intArrayOf(R.id.cell10, R.id.cell11),
-        )
-
-        for (i in matrix.indices) {
-            for (j in matrix[i].indices) {
-                val cell = findViewById<TextView>(cellIds[i][j])
-                cell.text = matrix[i][j].toString()
-                when {
-                    i == j -> cell.setBackgroundColor(resources.getColor(android.R.color.holo_green_light)) // True Positive
-                    i != j -> cell.setBackgroundColor(resources.getColor(android.R.color.holo_red_light)) // False Positive/Negative
+            val matrixAfterUpdate = confusionMatrix.getMatrix()
+    
+            // Atualiza a interface da matriz
+            updateGridConfusionMatrix(matrixAfterUpdate)
+            displayMetrics()
+    
+            // Verifica se a célula de True Positive (matriz[1][1]) foi incrementada
+            if (trueLabel == 0 && predictedLabel == 0) {
+                val currentTruePositiveCount = matrixAfterUpdate[0][0]
+                if (currentTruePositiveCount > previousTruePositiveCount && !isPopupActive) {
+                    showCrashDialog() // Exibe o popup quando o valor é incrementado
+                    previousTruePositiveCount = currentTruePositiveCount // Atualiza a contagem anterior
                 }
             }
+        } else {
+            println("Índices inválidos: trueLabel=$trueLabel, predictedLabel=$predictedLabel")
         }
     }
 
@@ -161,12 +177,19 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun showCrashDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Atenção!")
-        builder.setMessage("Uma batida foi detectada!")
-        builder.setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
-        val dialog = builder.create()
-        dialog.show()
+        if (!isPopupActive) {
+            isPopupActive = true // Marca que um popup está ativo
+    
+            val builder = AlertDialog.Builder(this)
+            builder.setTitle("Atenção!")
+            builder.setMessage("Uma batida foi detectada!")
+            builder.setPositiveButton("OK") { dialog, _ ->
+                dialog.dismiss()
+                isPopupActive = false // Reseta a variável ao fechar o popup
+            }
+            val dialog = builder.create()
+            dialog.show()
+        }
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
@@ -177,7 +200,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         super.onStart()
         val serviceIntent = Intent(this, SensorService::class.java)
         startService(serviceIntent) // Inicia o serviço em primeiro plano
-        LocalBroadcastManager.getInstance(this).registerReceiver(crashReceiver, IntentFilter("com.example.deteccaobatida.CAR_CRASH"))
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+            crashReceiver,
+            IntentFilter("com.example.deteccaobatida.CRASH_DETECTED")
+        )
     }
 
     override fun onStop() {
