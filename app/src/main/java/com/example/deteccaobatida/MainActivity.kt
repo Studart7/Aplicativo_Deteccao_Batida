@@ -185,15 +185,29 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             val builder = AlertDialog.Builder(this)
             builder.setTitle("Atenção!")
             builder.setMessage("Uma batida foi detectada! Ação será tomada em 15 segundos.")
-            
-            // Adiciona o botão OK
-            builder.setPositiveButton("OK") { dialog, _ ->
+    
+            // Adiciona o botão Confirmar batida
+            builder.setPositiveButton("Confirmar batida") { dialog, _ ->
                 dialog.dismiss()
                 isPopupActive = false // Reseta a variável ao fechar o popup
-                countDownTimer?.cancel() // Cancela o cronômetro se o usuário fechar
+                countDownTimer?.cancel() // Cancela o cronômetro se o usuário confirmar
+                // Atualiza a matriz de confusão para True Positive (1, 1)
+                updateConfusionMatrix(1, 1)
+            }
+    
+            // Adiciona o botão Alarme falso
+            builder.setNegativeButton("Alarme falso") { dialog, _ ->
+                dialog.dismiss()
+                isPopupActive = false // Reseta a variável ao fechar o popup
+                countDownTimer?.cancel() // Cancela o cronômetro se o usuário confirmar
+                // Não atualiza a matriz de confusão para False Positive (0, 0)
             }
     
             val dialog = builder.create()
+    
+            // Impede que o dialog seja fechado ao clicar fora dele
+            dialog.setCancelable(false)
+            dialog.setCanceledOnTouchOutside(false)
     
             // Exibe o popup
             dialog.show()
@@ -202,7 +216,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             startCountDownTimer(dialog)
         }
     }
-
+    
     private fun startCountDownTimer(dialog: AlertDialog) {
         countDownTimer = object : CountDownTimer(15000, 1000) { // 15 segundos, decrementando a cada 1 segundo
             override fun onTick(millisUntilFinished: Long) {
@@ -211,9 +225,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             }
     
             override fun onFinish() {
-                // Quando o cronômetro terminar, pode realizar uma ação aqui (por exemplo, fechar o popup ou alertar)
-                dialog.setMessage("Tempo esgotado! Nenhuma ação tomada.")
+                // Quando o cronômetro terminar, atualiza a matriz de confusão para True Positive (1, 1)
+                updateConfusionMatrix(1, 1)
                 isPopupActive = false // Marca que o popup pode ser fechado
+                dialog.dismiss() // Fecha o popup quando o cronômetro terminar
             }
         }
     
