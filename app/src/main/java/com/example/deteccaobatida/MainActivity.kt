@@ -10,6 +10,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import com.example.deteccaobatida.services.SensorService
 import android.os.Bundle
+import android.os.CountDownTimer
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -23,6 +24,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var gyroscope: Sensor? = null
     private var previousTruePositiveCount = 0
     private var isPopupActive = false // Controle para verificar se um popup já está ativo
+    private var countDownTimer: CountDownTimer? = null // Variável para o cronômetro
 
     private lateinit var tvAccelerometer: TextView
     private lateinit var tvGyroscope: TextView
@@ -182,14 +184,40 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     
             val builder = AlertDialog.Builder(this)
             builder.setTitle("Atenção!")
-            builder.setMessage("Uma batida foi detectada!")
+            builder.setMessage("Uma batida foi detectada! Ação será tomada em 15 segundos.")
+            
+            // Adiciona o botão OK
             builder.setPositiveButton("OK") { dialog, _ ->
                 dialog.dismiss()
                 isPopupActive = false // Reseta a variável ao fechar o popup
+                countDownTimer?.cancel() // Cancela o cronômetro se o usuário fechar
             }
+    
             val dialog = builder.create()
+    
+            // Exibe o popup
             dialog.show()
+    
+            // Inicia o cronômetro de 15 segundos
+            startCountDownTimer(dialog)
         }
+    }
+
+    private fun startCountDownTimer(dialog: AlertDialog) {
+        countDownTimer = object : CountDownTimer(15000, 1000) { // 15 segundos, decrementando a cada 1 segundo
+            override fun onTick(millisUntilFinished: Long) {
+                // Atualiza a mensagem do popup com o tempo restante
+                dialog.setMessage("Uma batida foi detectada! Ação será tomada em ${millisUntilFinished / 1000} segundos.")
+            }
+    
+            override fun onFinish() {
+                // Quando o cronômetro terminar, pode realizar uma ação aqui (por exemplo, fechar o popup ou alertar)
+                dialog.setMessage("Tempo esgotado! Nenhuma ação tomada.")
+                isPopupActive = false // Marca que o popup pode ser fechado
+            }
+        }
+    
+        countDownTimer?.start() // Inicia o cronômetro
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
