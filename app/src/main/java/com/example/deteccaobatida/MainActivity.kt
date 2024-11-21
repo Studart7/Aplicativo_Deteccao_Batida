@@ -184,11 +184,16 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             intArrayOf(R.id.cell00, R.id.cell01),
             intArrayOf(R.id.cell10, R.id.cell11)
         )
-
+    
+        val titles = arrayOf(
+            arrayOf("Verdadeiro Positivo", "Falso Negativo"),
+            arrayOf("Falso Positivo", "Verdadeiro Negativo")
+        )
+    
         for (i in matrix.indices) {
             for (j in matrix[i].indices) {
                 val cell = findViewById<TextView>(cellIds[i][j])
-                cell.text = matrix[i][j].toString()
+                cell.text = "${matrix[i][j]}\n${titles[i][j]}"
             }
         }
     }
@@ -223,12 +228,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 dialog.dismiss()
                 isPopupActive = false // Reseta a variável ao fechar o popup
                 countDownTimer?.cancel() // Cancela o cronômetro se o usuário confirmar
-                // Atualiza a matriz de confusão para True Positive (1, 1)
-                updateConfusionMatrix(1, 1)
             }
     
             // Adiciona o botão Alarme falso
             builder.setNegativeButton("Alarme falso") { dialog, _ ->
+                updateConfusionMatrix(1, 0)
                 dialog.dismiss()
                 isPopupActive = false // Reseta a variável ao fechar o popup
                 countDownTimer?.cancel() // Cancela o cronômetro se o usuário confirmar
