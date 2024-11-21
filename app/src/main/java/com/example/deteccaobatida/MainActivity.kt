@@ -1,13 +1,16 @@
 package com.example.deteccaobatida
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Build
 import com.example.deteccaobatida.services.SensorService
 import android.os.Bundle
 import android.os.CountDownTimer
@@ -16,6 +19,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import android.widget.GridLayout
 import android.widget.TextView
+import android.telephony.SmsManager
+import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
@@ -46,6 +53,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            requestSMSPermission()
+        }
 
         tvAccelerometer = findViewById(R.id.tvAccelerometer)
         tvGyroscope = findViewById(R.id.tvGyroscope)
@@ -125,6 +135,27 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
+    private fun sendSMS(phoneNumber: String, message: String) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
+            val smsManager = SmsManager.getDefault()
+            smsManager.sendTextMessage(phoneNumber, null, message, null, null)
+
+        }
+    }
+
+    private fun requestSMSPermission() {
+        val permission = Manifest.permission.SEND_SMS
+        if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(permission), 101)
+        }
+    }
+
+    // Callback para lidar com a permissão de SMS
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+    }
+
     private fun updateConfusionMatrix(trueLabel: Int, predictedLabel: Int) {
         if (trueLabel in 0 until numClasses && predictedLabel in 0 until numClasses) {
             val matrixBeforeUpdate = confusionMatrix.getMatrix().map { it.clone() } // Clona o estado atual da matriz
@@ -188,6 +219,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     
             // Adiciona o botão Confirmar batida
             builder.setPositiveButton("Confirmar batida") { dialog, _ ->
+                sendSMS("21988366294","O carro bateu!!!")
                 dialog.dismiss()
                 isPopupActive = false // Reseta a variável ao fechar o popup
                 countDownTimer?.cancel() // Cancela o cronômetro se o usuário confirmar
@@ -228,6 +260,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 // Quando o cronômetro terminar, atualiza a matriz de confusão para True Positive (1, 1)
                 updateConfusionMatrix(1, 1)
                 isPopupActive = false // Marca que o popup pode ser fechado
+                sendSMS("21988366294","O carro bateu!!!")
                 dialog.dismiss() // Fecha o popup quando o cronômetro terminar
             }
         }
@@ -249,6 +282,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         )
     }
 
+
     override fun onStop() {
         super.onStop()
         LocalBroadcastManager.getInstance(this).unregisterReceiver(crashReceiver)
@@ -268,4 +302,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         super.onPause()
         sensorManager.unregisterListener(this)
     }
+
+
 }
